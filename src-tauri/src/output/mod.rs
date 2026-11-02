@@ -1,15 +1,13 @@
-/// Print a styled informational note to stderr, matching the CLI's own output.
+/// Print an informational note to stderr, matching the CLI's own output.
 ///
 /// The library emits these while the CLI is drawing its banner (version
 /// resolution, metadata-variant notes). An unstyled `Info: …` line in the
-/// middle of that output reads like a stray debug print; the `ℹ` marker and dim
-/// styling keep it visually part of the CLI's progress output.
+/// middle of that output reads like a stray debug print; the `ℹ` marker keeps
+/// it visually part of the CLI's progress output. No terminal styling crate is
+/// used here: this module is shared verbatim with the Tauri/Android ports,
+/// which do not depend on `console`.
 pub fn note(msg: &str) {
-    eprintln!(
-        "  {} {}",
-        console::style("ℹ").cyan().bold(),
-        console::style(msg).dim()
-    );
+    eprintln!("  ℹ {msg}");
 }
 
 pub mod cpp_scaffolding;
