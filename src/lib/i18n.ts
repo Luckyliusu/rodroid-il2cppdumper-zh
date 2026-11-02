@@ -73,6 +73,7 @@ type TranslationKeys = {
   label_method_bodies: string; method_body_off: string; method_body_assembly: string;
   method_body_csharp: string; method_body_beta_note: string;
   setting_annotate_recovery: string; setting_il_recovery: string;
+  setting_csharp_full_dump: string;
   setting_pseudo_c_max_body: string; setting_pseudo_c_target: string;
   class_picker_open: string; class_picker_title: string; class_picker_subtitle: string;
   class_picker_done: string; class_picker_search: string;
@@ -130,7 +131,7 @@ const en: TranslationKeys = {
   dialog_manual_desc: "Auto-detection failed. Enter CodeRegistration and MetadataRegistration addresses manually.",
   setting_code_registration: "CodeRegistration (hex)",
   setting_metadata_registration: "MetadataRegistration (hex)",
-  about_version: "v8.0", about_description: "IL2CPP binary dumper for Unity games — powered by Rust",
+  about_version: "v8.5", about_description: "IL2CPP binary dumper for Unity games — powered by Rust",
   about_developer: "Developer", about_powered_by: "Powered by Rust 🦀",
   about_community: "Community",
   about_channel_1: "Telegram Channel", about_channel_1_desc: "Updates & releases",
@@ -146,6 +147,7 @@ const en: TranslationKeys = {
   method_body_beta_note: "Native C# decompiler (beta)",
   setting_annotate_recovery: "Annotate recovery quality",
   setting_il_recovery: "IL recovery into DummyDLL",
+  setting_csharp_full_dump: "Full dump (keep all types, empty bodies outside selection)",
   setting_pseudo_c_max_body: "Max body size (0 = all)",
   setting_pseudo_c_target: "C# output target",
   class_picker_open: "Select classes",
@@ -209,7 +211,7 @@ const sq: TranslationKeys = {
   dialog_manual_desc: "Zbulimi automatik dështoi. Vendos adresat CodeRegistration dhe MetadataRegistration manualisht.",
   setting_code_registration: "CodeRegistration (hex)",
   setting_metadata_registration: "MetadataRegistration (hex)",
-  about_version: "v8.0", about_description: "IL2CPP dumper binar për lojëra Unity — mundësuar nga Rust",
+  about_version: "v8.5", about_description: "IL2CPP dumper binar për lojëra Unity — mundësuar nga Rust",
   about_developer: "Zhvilluesi", about_powered_by: "Mundësuar nga Rust 🦀",
   about_community: "Komuniteti",
   about_channel_1: "Kanali Telegram", about_channel_1_desc: "Përditësime & publikime",
@@ -225,6 +227,7 @@ const sq: TranslationKeys = {
   method_body_beta_note: "Decompiler native C# (beta)",
   setting_annotate_recovery: "Shëno cilësinë e recovery",
   setting_il_recovery: "IL recovery në DummyDLL",
+  setting_csharp_full_dump: "Dump i plotë (të gjitha tipet, trupa bosh jashtë zgjedhjes)",
   setting_pseudo_c_max_body: "Madhësia max e trupit (0 = të gjitha)",
   setting_pseudo_c_target: "Objektivi i daljes C#",
   class_picker_open: "Zgjidh klasat",
@@ -288,7 +291,7 @@ const ar: TranslationKeys = {
   dialog_manual_desc: "فشل الاكتشاف التلقائي. أدخل عناوين CodeRegistration و MetadataRegistration يدوياً.",
   setting_code_registration: "CodeRegistration (hex)",
   setting_metadata_registration: "MetadataRegistration (hex)",
-  about_version: "v8.0", about_description: "أداة تفريغ IL2CPP لألعاب Unity — مدعوم بـ Rust",
+  about_version: "v8.5", about_description: "أداة تفريغ IL2CPP لألعاب Unity — مدعوم بـ Rust",
   about_developer: "المطور", about_powered_by: "مدعوم بـ Rust 🦀",
   about_community: "المجتمع",
   about_channel_1: "قناة تيليجرام", about_channel_1_desc: "تحديثات & إصدارات",
@@ -304,6 +307,7 @@ const ar: TranslationKeys = {
   method_body_beta_note: "Native C# decompiler (beta)",
   setting_annotate_recovery: "Annotate recovery quality",
   setting_il_recovery: "IL recovery into DummyDLL",
+  setting_csharp_full_dump: "تفريغ كامل (كل الأنواع، أجسام فارغة خارج التحديد)",
   setting_pseudo_c_max_body: "Max body size (0 = all)",
   setting_pseudo_c_target: "C# output target",
   class_picker_open: "Select classes",
@@ -367,7 +371,7 @@ const es: TranslationKeys = {
   dialog_manual_desc: "La detección automática falló. Ingrese las direcciones CodeRegistration y MetadataRegistration manualmente.",
   setting_code_registration: "CodeRegistration (hex)",
   setting_metadata_registration: "MetadataRegistration (hex)",
-  about_version: "v8.0", about_description: "IL2CPP binary dumper para juegos Unity — impulsado por Rust",
+  about_version: "v8.5", about_description: "IL2CPP binary dumper para juegos Unity — impulsado por Rust",
   about_developer: "Desarrollador", about_powered_by: "Impulsado por Rust 🦀",
   about_community: "Comunidad",
   about_channel_1: "Canal de Telegram", about_channel_1_desc: "Actualizaciones & lanzamientos",
@@ -383,6 +387,7 @@ const es: TranslationKeys = {
   method_body_beta_note: "Decompilador C# nativo (beta)",
   setting_annotate_recovery: "Anotar calidad de recovery",
   setting_il_recovery: "IL recovery en DummyDLL",
+  setting_csharp_full_dump: "Volcado completo (todos los tipos, cuerpos vacíos fuera de la selección)",
   setting_pseudo_c_max_body: "Tamaño máx. del cuerpo (0 = todos)",
   setting_pseudo_c_target: "Objetivo de salida C#",
   class_picker_open: "Seleccionar clases",

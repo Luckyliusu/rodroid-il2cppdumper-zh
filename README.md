@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white" />
   <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-GPLv3-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
 </p>
 
 <h1 align="center">🛡️ Rodroid Il2CppDumper — Desktop & Mobile GUI</h1>
@@ -20,11 +20,25 @@
 </p>
 
 ---
-## ✨ What's New in V8 — The C# Decompiler
+## ✨ What's New in V8.5 — The C# Decompiler (PRE-ALPHA)
 
-**V8 brings the C# decompiler to the desktop and mobile app**, after 1.5 months
-of focused development. It recovers native IL2CPP method bodies into readable
-C#-style output, alongside the metadata and type information in `dump.cs`.
+**V8.5 syncs the final pre-alpha engine into the GUI.** The decompiler is
+declared **pre-alpha** at this revision; alpha is gated on the worklist in
+`il2cpp-dumper-rs/NEXT_STEPS.md` §0. The app version, window title and engine
+are all v8.5.
+
+The engine grew from ~111k lines (v8.0) to **~225k lines**; the C# decompiler
+(`recovery/`) alone grew from 78k to **186.5k lines** across 116 files.
+
+Measured on the reference Temple Run 2 corpus (`OUT_R207`, 24,195 methods):
+**519,404 lines / 18.3 MB** `dump.cs`, `target not emitted` markers down to
+**291** (from 6,449), raw `*(…)` pointer accesses down to **36,902** (from
+55,121), undefined-local annotations **494** in 1,377 suspect methods, zero
+duplicate labels. Same engine in the CLI, the Tauri GUI, and the Android JNI
+core.
+
+V8.5 recovers native IL2CPP method bodies into readable C#-style output,
+alongside the metadata and type information in `dump.cs`.
 
 ### Native method recovery
 
@@ -229,7 +243,7 @@ The backend wraps the [`il2cpp_dumper`](../il2cpp_dumper) Rust crate as a librar
 
 ## 📜 License
 
-GNU GPLv3
+MIT
 
 ---
 

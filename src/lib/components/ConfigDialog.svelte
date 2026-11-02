@@ -170,6 +170,7 @@
             </div>
             <ConfigSwitch label={$t.setting_annotate_recovery} bind:checked={config.annotateRecovery} />
             <ConfigSwitch label={$t.setting_il_recovery} bind:checked={config.ilRecovery} />
+            <ConfigSwitch label={$t.setting_csharp_full_dump} bind:checked={config.csharpFullDump} />
             <TextField
               type="number"
               variant="filled"

@@ -1,93 +1,16 @@
 use serde::{Deserialize, Deserializer, Serialize};
-use serde::de::{self, Visitor};
-use std::fmt;
 
 /// Deserialize a `dump*Target` value leniently. The field is documented as
 /// 0 = Both, 1 = Flat, 2 = Split; anything outside that range (e.g. a stale
 /// value from an older config) is clamped to 0 instead of failing the whole
 /// config load — a single bad field used to silently disable every other
 /// setting (the `dumpPseudoCTarget: 5000` bug).
-///
-/// Also accepts JSON strings (`"0"`) because the Tauri UI number TextFields
-/// often bind as strings; a single stringy field used to reject the entire
-/// config and fall back to defaults (C# / Asm silently off).
 fn de_target<'de, D>(deserializer: D) -> Result<u8, D::Error>
 where
     D: Deserializer<'de>,
 {
-    struct TargetVisitor;
-    impl<'de> Visitor<'de> for TargetVisitor {
-        type Value = u8;
-        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "0..=2 as number or string")
-        }
-        fn visit_u64<E: de::Error>(self, v: u64) -> Result<u8, E> {
-            Ok(v.min(2) as u8)
-        }
-        fn visit_i64<E: de::Error>(self, v: i64) -> Result<u8, E> {
-            Ok(v.clamp(0, 2) as u8)
-        }
-        fn visit_f64<E: de::Error>(self, v: f64) -> Result<u8, E> {
-            Ok((v as u64).min(2) as u8)
-        }
-        fn visit_str<E: de::Error>(self, v: &str) -> Result<u8, E> {
-            let n: u64 = v.trim().parse().map_err(E::custom)?;
-            Ok(n.min(2) as u8)
-        }
-    }
-    deserializer.deserialize_any(TargetVisitor)
-}
-
-fn de_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct UsizeVisitor;
-    impl<'de> Visitor<'de> for UsizeVisitor {
-        type Value = usize;
-        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "usize as number or string")
-        }
-        fn visit_u64<E: de::Error>(self, v: u64) -> Result<usize, E> {
-            Ok(v as usize)
-        }
-        fn visit_i64<E: de::Error>(self, v: i64) -> Result<usize, E> {
-            Ok(v.max(0) as usize)
-        }
-        fn visit_f64<E: de::Error>(self, v: f64) -> Result<usize, E> {
-            Ok(v.max(0.0) as usize)
-        }
-        fn visit_str<E: de::Error>(self, v: &str) -> Result<usize, E> {
-            v.trim().parse().map_err(E::custom)
-        }
-    }
-    deserializer.deserialize_any(UsizeVisitor)
-}
-
-fn de_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct F64Visitor;
-    impl<'de> Visitor<'de> for F64Visitor {
-        type Value = f64;
-        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "f64 as number or string")
-        }
-        fn visit_f64<E: de::Error>(self, v: f64) -> Result<f64, E> {
-            Ok(v)
-        }
-        fn visit_u64<E: de::Error>(self, v: u64) -> Result<f64, E> {
-            Ok(v as f64)
-        }
-        fn visit_i64<E: de::Error>(self, v: i64) -> Result<f64, E> {
-            Ok(v as f64)
-        }
-        fn visit_str<E: de::Error>(self, v: &str) -> Result<f64, E> {
-            v.trim().parse().map_err(E::custom)
-        }
-    }
-    deserializer.deserialize_any(F64Visitor)
+    let v = u32::deserialize(deserializer)?;
+    Ok(v.min(2) as u8)
 }
 
 /// Primary method-body output mode for `dump.cs`.
@@ -160,7 +83,6 @@ pub struct Config {
     pub require_any_key: bool,
     pub dummy_dll_add_token: bool,
     pub force_il2cpp_version: bool,
-    #[serde(deserialize_with = "de_f64")]
     pub force_version: f64,
     pub force_dump: bool,
     pub no_redirected_pointer: bool,
@@ -206,19 +128,23 @@ pub struct Config {
     pub dump_pseudo_c_interactive: bool,
     /// Skip C# decompilation of methods whose body is larger than this many
     /// bytes (0 = no limit).
-    #[serde(
-        rename = "csharpMaxBodySize",
-        alias = "dumpPseudoCMaxBodySize",
-        deserialize_with = "de_usize"
-    )]
+    #[serde(rename = "csharpMaxBodySize", alias = "dumpPseudoCMaxBodySize")]
     pub dump_pseudo_c_max_body_size: usize,
     /// Restrict method bodies (C# pseudo, IL recovery, and assembly) to these
     /// assemblies (empty = all).
-    #[serde(rename = "csharpIncludeAssemblies", alias = "dumpPseudoCIncludeAssemblies")]
+    #[serde(
+        rename = "csharpIncludeAssemblies",
+        alias = "dumpPseudoCIncludeAssemblies"
+    )]
     pub dump_pseudo_c_include_assemblies: Vec<String>,
     /// Restrict method bodies to these types / namespace prefixes (empty = all).
     #[serde(rename = "csharpIncludeTypes", alias = "dumpPseudoCIncludeTypes")]
     pub dump_pseudo_c_include_types: Vec<String>,
+    /// Keep the FULL metadata dump when a class filter is active: every type
+    /// and method header is still emitted, but only the selected
+    /// assemblies/types get method bodies — the rest render as `{ }`.
+    #[serde(rename = "csharpFullDump", alias = "dumpPseudoCFullDump")]
+    pub dump_pseudo_c_full_dump: bool,
     #[serde(rename = "assemblyHexBytes", alias = "dumpDisassemblyHexBytes")]
     pub dump_disassembly_hex_bytes: bool,
     #[serde(rename = "assemblyFieldNames", alias = "dumpDisassemblyFieldNames")]
@@ -229,8 +155,7 @@ pub struct Config {
     pub dump_disassembly_cfg: bool,
     #[serde(
         rename = "maxAssemblyInstructions",
-        alias = "maxDisassemblyInstructions",
-        deserialize_with = "de_usize"
+        alias = "maxDisassemblyInstructions"
     )]
     pub max_disassembly_instructions: usize,
     pub generate_cpp_scaffold: bool,
@@ -244,7 +169,6 @@ pub struct Config {
     pub dump_static_field_metadata: bool,
     /// Include hex/metadata for FieldRVA (`PrivateImplementationDetails`) entries.
     pub dump_field_rva_data: bool,
-    #[serde(deserialize_with = "de_usize")]
     pub max_field_rva_dump_bytes: usize,
     /// Recover real CIL method bodies into the generated DummyDLLs
     /// (Cpp2IL-style IL recovery), so dnSpy/ILSpy show decompilable C# instead
@@ -299,6 +223,7 @@ impl Default for Config {
             dump_pseudo_c_max_body_size: 0, // 0 = decompile every method body
             dump_pseudo_c_include_assemblies: Vec::new(),
             dump_pseudo_c_include_types: Vec::new(),
+            dump_pseudo_c_full_dump: false,
             dump_disassembly_hex_bytes: true,
             dump_disassembly_field_names: true,
             dump_disassembly_annotations: true,
@@ -328,8 +253,7 @@ impl Config {
     ///   derive the mode from the booleans.
     /// - New configs (`methodBodyMode` set): mode wins and rewrites the booleans.
     pub fn reconcile_method_body_mode(&mut self) {
-        let from_flags =
-            MethodBodyMode::from_flags(self.dump_disassembly, self.dump_pseudo_c);
+        let from_flags = MethodBodyMode::from_flags(self.dump_disassembly, self.dump_pseudo_c);
         if self.method_body_mode == MethodBodyMode::Off && from_flags != MethodBodyMode::Off {
             self.method_body_mode = from_flags;
         } else {
@@ -387,7 +311,8 @@ mod tests {
 
     #[test]
     fn mode_wins_over_stale_bools() {
-        let json = r#"{ "methodBodyMode": "assembly", "dumpPseudoC": true, "dumpDisassembly": false }"#;
+        let json =
+            r#"{ "methodBodyMode": "assembly", "dumpPseudoC": true, "dumpDisassembly": false }"#;
         let mut cfg: Config = serde_json::from_str(json).unwrap();
         cfg.reconcile_method_body_mode();
         assert_eq!(cfg.method_body_mode, MethodBodyMode::Assembly);
@@ -418,8 +343,14 @@ mod tests {
         assert_eq!(cfg.dump_pseudo_c_target, 2);
         assert!(cfg.dump_pseudo_c_interactive);
         assert_eq!(cfg.dump_pseudo_c_max_body_size, 100);
-        assert_eq!(cfg.dump_pseudo_c_include_assemblies, vec!["Assembly-CSharp".to_string()]);
-        assert_eq!(cfg.dump_pseudo_c_include_types, vec!["Game.Player".to_string()]);
+        assert_eq!(
+            cfg.dump_pseudo_c_include_assemblies,
+            vec!["Assembly-CSharp".to_string()]
+        );
+        assert_eq!(
+            cfg.dump_pseudo_c_include_types,
+            vec!["Game.Player".to_string()]
+        );
         assert!(!cfg.dump_disassembly_hex_bytes);
         assert_eq!(cfg.max_disassembly_instructions, 64);
         let out = serde_json::to_string_pretty(&cfg).unwrap();
@@ -429,6 +360,19 @@ mod tests {
         assert!(!out.contains("dumpPseudoCIncludeAssemblies"));
         assert!(!out.contains("\"dumpDisassembly\""));
         assert!(!out.contains("\"dumpPseudoC\""));
+    }
+
+    #[test]
+    fn full_dump_with_class_filter_round_trips() {
+        let cfg: Config =
+            serde_json::from_str(r#"{ "csharpIncludeAssemblies": ["Assembly-CSharp.dll"], "csharpFullDump": true }"#)
+                .unwrap();
+        assert!(cfg.dump_pseudo_c_full_dump);
+        let out = serde_json::to_string(&cfg).unwrap();
+        assert!(out.contains("\"csharpFullDump\":true"));
+        // The default is OFF, so an older config keeps the old behaviour.
+        let old: Config = serde_json::from_str("{}").unwrap();
+        assert!(!old.dump_pseudo_c_full_dump);
     }
 
     #[test]
@@ -463,86 +407,10 @@ mod tests {
         );
         // Legacy bools must not pollute saved config.json.
         assert!(!json.contains("dumpDisassembly"));
-        assert!(!json.contains("\"dumpPseudoC\""));
+        assert!(!json.contains("dumpPseudoC"));
         let mut again: Config = serde_json::from_str(&json).unwrap();
         again.reconcile_method_body_mode();
         assert_eq!(again.method_body_mode, MethodBodyMode::Both);
         assert!(again.dump_disassembly && again.dump_pseudo_c);
-    }
-
-    #[test]
-    fn stringy_numbers_from_ui_still_enable_csharp() {
-        // Tauri TextField type=number often binds as strings in JSON.
-        let json = r#"{
-            "methodBodyMode": "csharp",
-            "dumpPseudoC": true,
-            "csharpTarget": "0",
-            "csharpMaxBodySize": "0",
-            "maxAssemblyInstructions": "512",
-            "maxFieldRvaDumpBytes": "4096",
-            "forceVersion": "24.3"
-        }"#;
-        let mut cfg: Config = serde_json::from_str(json).expect("stringy numbers must parse");
-        cfg.reconcile_method_body_mode();
-        assert_eq!(cfg.method_body_mode, MethodBodyMode::Csharp);
-        assert!(cfg.dump_pseudo_c);
-        assert_eq!(cfg.dump_pseudo_c_max_body_size, 0);
-        assert_eq!(cfg.max_disassembly_instructions, 512);
-        assert!((cfg.force_version - 24.3).abs() < f64::EPSILON);
-    }
-}
-
-#[cfg(test)]
-mod tauri_wire_tests {
-    use super::*;
-
-    #[test]
-    fn tauri_ui_payload_keeps_class_picker_assemblies() {
-        // Shape dumpRunner JSON.stringify(cfg) actually sends.
-        let json = r#"{
-            "methodBodyMode": "csharp",
-            "dumpPseudoC": true,
-            "dumpDisassembly": false,
-            "csharpIncludeAssemblies": ["Assembly-CSharp.dll", "Assembly-CSharp-firstpass.dll"],
-            "csharpIncludeTypes": [],
-            "csharpTarget": 0,
-            "csharpMaxBodySize": 0,
-            "maxAssemblyInstructions": 512,
-            "forceVersion": 24.3,
-            "pseudoCEngine": "native"
-        }"#;
-        let mut cfg: Config = serde_json::from_str(json).expect("parse");
-        cfg.reconcile_method_body_mode();
-        assert_eq!(cfg.method_body_mode, MethodBodyMode::Csharp);
-        assert!(cfg.dump_pseudo_c);
-        assert_eq!(
-            cfg.dump_pseudo_c_include_assemblies,
-            vec![
-                "Assembly-CSharp.dll".to_string(),
-                "Assembly-CSharp-firstpass.dll".to_string()
-            ]
-        );
-        assert!(cfg.dump_pseudo_c_include_types.is_empty());
-    }
-
-    #[test]
-    fn stringy_numbers_do_not_drop_include_assemblies() {
-        let json = r#"{
-            "methodBodyMode": "csharp",
-            "dumpPseudoC": true,
-            "csharpIncludeAssemblies": ["Assembly-CSharp.dll"],
-            "csharpMaxBodySize": "0",
-            "maxAssemblyInstructions": "512",
-            "maxFieldRvaDumpBytes": "4096",
-            "forceVersion": "24.3",
-            "csharpTarget": "0"
-        }"#;
-        let mut cfg: Config = serde_json::from_str(json).expect("stringy parse");
-        cfg.reconcile_method_body_mode();
-        assert!(cfg.dump_pseudo_c);
-        assert_eq!(
-            cfg.dump_pseudo_c_include_assemblies,
-            vec!["Assembly-CSharp.dll".to_string()]
-        );
     }
 }

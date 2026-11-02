@@ -13,6 +13,17 @@ pub mod recovery;
 pub mod search;
 pub mod utils;
 
+/// `eprintln!` for the decompiler's internal progress logs (`[debug] …`).
+/// Silent unless a developer sets `ILR_DEBUG=1`.
+#[macro_export]
+macro_rules! dbg_eprintln {
+    ($($arg:tt)*) => {
+        if crate::recovery::env_flags::flag("ILR_DEBUG") {
+            eprintln!($($arg)*);
+        }
+    };
+}
+
 use std::fs;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -471,6 +482,76 @@ fn init_elf(
     let mut il2cpp = Il2Cpp::from_elf(&elf);
     il2cpp.codm = il2cpp.codm || resolve_codm(config, metadata);
     il2cpp.exported_symbols = elf_exports.iter().map(|(n, _)| n.clone()).collect();
+    // Exception tables (CLI parity): `.eh_frame` → (func, LSDA) plus
+    // `.gcc_except_table`, so managed try/catch/finally regions recover.
+    il2cpp.image_names = metadata
+        .image_defs
+        .iter()
+        .filter_map(|image| metadata.get_string_from_index(image.name_index).ok())
+        .collect();
+    // Memory dumps: locate the code-gen modules with the image names once the
+    // runtime base is known (CLI parity).
+    if il2cpp.image_base != 0 && il2cpp.code_gen_module_method_pointers.is_empty() {
+        let names = il2cpp.image_names.clone();
+        let located = il2cpp.locate_code_gen_modules_in_dump(&names);
+        let pointers: usize = il2cpp
+            .code_gen_module_method_pointers
+            .values()
+            .map(|v| v.len())
+            .sum();
+        if located > 0 {
+            emit_log(
+                app,
+                &format!(
+                    "Located {located} code-gen modules in the dump ({pointers} method addresses)"
+                ),
+            );
+        } else {
+            emit_log(
+                app,
+                "Could not locate code-gen modules in the dump; method addresses will be -1",
+            );
+        }
+    }
+    {
+        let fdes = elf
+            .section_bytes_by_name(".eh_frame")
+            .map(|(addr, bytes)| {
+                crate::recovery::exceptions::scan_eh_frame_fdes(
+                    &bytes,
+                    addr,
+                    elf.image_base(),
+                    if elf.is_32bit { 4 } else { 8 },
+                )
+            })
+            .unwrap_or_default();
+        if !fdes.is_empty() {
+            if let Some((tab_rva, tab_bytes)) = elf.section_bytes_by_name(".gcc_except_table") {
+                il2cpp.eh_tables = crate::recovery::exceptions::EhTables::Elf {
+                    fdes,
+                    table: tab_bytes,
+                    table_rva: tab_rva,
+                    ptr_size: if elf.is_32bit { 4 } else { 8 },
+                };
+            }
+        }
+    }
+    // 32-bit ARM ELF: `.ARM.exidx`/`.ARM.extab` in place of DWARF `.eh_frame`.
+    if il2cpp.eh_tables.is_empty() {
+        if let Some((exidx_rva, exidx)) = elf.section_bytes_by_name(".ARM.exidx") {
+            if !exidx.is_empty() {
+                let (extab_rva, extab) = elf
+                    .section_bytes_by_name(".ARM.extab")
+                    .unwrap_or((0, Vec::new()));
+                il2cpp.eh_tables = crate::recovery::exceptions::EhTables::ArmEhAbi {
+                    exidx,
+                    exidx_rva,
+                    extab,
+                    extab_rva,
+                };
+            }
+        }
+    }
     for (name, addr) in elf_exports {
         if name.starts_with("il2cpp_") || name.starts_with("mono_") {
             let rva = il2cpp.get_rva(addr);
@@ -604,6 +685,70 @@ fn init_pe(
     });
     il2cpp.init_with_auto_plus(cr_addr, mr_addr, &|addr| pe.map_vatr(addr), false)?;
     il2cpp.data_sections = pe.data_search_sections();
+    // Exception tables (CLI parity): PE .pdata RUNTIME_FUNCTION list, whose
+    // .xdata SEH scope tables decode to real try/catch/finally regions.
+    il2cpp.image_names = metadata
+        .image_defs
+        .iter()
+        .filter_map(|image| metadata.get_string_from_index(image.name_index).ok())
+        .collect();
+    // Memory dumps: locate the code-gen modules with the image names once the
+    // runtime base is known (CLI parity).
+    if il2cpp.image_base != 0 && il2cpp.code_gen_module_method_pointers.is_empty() {
+        let names = il2cpp.image_names.clone();
+        let located = il2cpp.locate_code_gen_modules_in_dump(&names);
+        let pointers: usize = il2cpp
+            .code_gen_module_method_pointers
+            .values()
+            .map(|v| v.len())
+            .sum();
+        if located > 0 {
+            emit_log(
+                app,
+                &format!(
+                    "Located {located} code-gen modules in the dump ({pointers} method addresses)"
+                ),
+            );
+        } else {
+            emit_log(
+                app,
+                "Could not locate code-gen modules in the dump; method addresses will be -1",
+            );
+        }
+    }
+    if let Some((pdata_rva, pdata)) = pe.section_bytes_by_name(".pdata") {
+        let _ = pdata_rva;
+        let mut funcs: Vec<(u64, u64)> = Vec::new();
+        let entry_size = if pe.is_32bit { 8 } else { 12 };
+        let mut off = 0usize;
+        while off + entry_size <= pdata.len() {
+            let rd = |o: usize| -> u32 {
+                u32::from_le_bytes([pdata[o], pdata[o + 1], pdata[o + 2], pdata[o + 3]])
+            };
+            let start = rd(off);
+            let end = rd(off + 4);
+            if end == 0 {
+                break; // sentinel
+            }
+            let unwind = if entry_size == 12 { rd(off + 8) } else { 0 };
+            if start != 0 {
+                funcs.push((start as u64, unwind as u64));
+            }
+            off += entry_size;
+        }
+        funcs.sort_unstable();
+        let (xdata_rva, xdata) = pe
+            .section_bytes_by_name(".xdata")
+            .unwrap_or((0, Vec::new()));
+        il2cpp.eh_tables = crate::recovery::exceptions::EhTables::Pe(
+            crate::recovery::exceptions::PeExceptionTables {
+                funcs,
+                xdata,
+                xdata_rva,
+                ptr_size: if pe.is_32bit { 4 } else { 8 },
+            },
+        );
+    }
     if let Ok(exports) = pe.list_exported_symbols() {
         il2cpp.exported_symbols = exports.iter().map(|(n, _)| n.clone()).collect();
         for (name, rva) in exports {
@@ -807,6 +952,53 @@ fn init_macho(
     };
 
     il2cpp.data_sections = macho.data_search_sections();
+    // Exception tables (CLI parity): __unwind_info (function → LSDA index) +
+    // __gcc_except_tab.
+    il2cpp.image_names = metadata
+        .image_defs
+        .iter()
+        .filter_map(|image| metadata.get_string_from_index(image.name_index).ok())
+        .collect();
+    // Memory dumps: locate the code-gen modules with the image names once the
+    // runtime base is known (CLI parity).
+    if il2cpp.image_base != 0 && il2cpp.code_gen_module_method_pointers.is_empty() {
+        let names = il2cpp.image_names.clone();
+        let located = il2cpp.locate_code_gen_modules_in_dump(&names);
+        let pointers: usize = il2cpp
+            .code_gen_module_method_pointers
+            .values()
+            .map(|v| v.len())
+            .sum();
+        if located > 0 {
+            emit_log(
+                app,
+                &format!(
+                    "Located {located} code-gen modules in the dump ({pointers} method addresses)"
+                ),
+            );
+        } else {
+            emit_log(
+                app,
+                "Could not locate code-gen modules in the dump; method addresses will be -1",
+            );
+        }
+    }
+    {
+        use crate::recovery::exceptions::{EhTables, MachOExceptionTables};
+        if let (Some((ui_rva, unwind_info)), Some((tab_rva, tab_bytes))) = (
+            macho.section_bytes_by_name("__unwind_info"),
+            macho.section_bytes_by_name("__gcc_except_tab"),
+        ) {
+            let _ = ui_rva;
+            il2cpp.eh_tables = EhTables::MachO(MachOExceptionTables {
+                unwind_info,
+                gcc_except_tab: tab_bytes,
+                gcc_except_tab_file_rva: tab_rva,
+                image_base: macho.image_base(),
+                ptr_size: if macho.is_32bit { 4 } else { 8 },
+            });
+        }
+    }
 
     if macho.is_32bit {
         for ptr in il2cpp.method_pointers.iter_mut() {

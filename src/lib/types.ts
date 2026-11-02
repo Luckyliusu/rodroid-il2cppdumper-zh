@@ -34,6 +34,7 @@ export interface DumperConfig {
   csharpMaxBodySize: number;
   csharpIncludeAssemblies: string[];
   csharpIncludeTypes: string[];
+  csharpFullDump: boolean;
   assemblyHexBytes: boolean;
   assemblyFieldNames: boolean;
   assemblyAnnotations: boolean;
@@ -185,6 +186,7 @@ export function normalizeDumperConfig(config: DumperConfig): DumperConfig {
       raw.csharpIncludeAssemblies ?? raw.dumpPseudoCIncludeAssemblies,
     ),
     csharpIncludeTypes: asStringList(raw.csharpIncludeTypes ?? raw.dumpPseudoCIncludeTypes),
+    csharpFullDump: pick(raw.csharpFullDump, raw.dumpPseudoCFullDump, DEFAULT_CONFIG.csharpFullDump, asBool),
     assemblyHexBytes: pick(
       raw.assemblyHexBytes,
       raw.dumpDisassemblyHexBytes,
@@ -281,6 +283,7 @@ export const DEFAULT_CONFIG: DumperConfig = {
   csharpMaxBodySize: 0,
   csharpIncludeAssemblies: [],
   csharpIncludeTypes: [],
+  csharpFullDump: false,
   assemblyHexBytes: true,
   assemblyFieldNames: true,
   assemblyAnnotations: true,
