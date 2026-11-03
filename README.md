@@ -40,6 +40,23 @@ core.
 V8.5 recovers native IL2CPP method bodies into readable C#-style output,
 alongside the metadata and type information in `dump.cs`.
 
+### Fixed in v8.5
+
+- **Free Fire, Free Fire MAX and Free Fire India:** the IL2CPP **version
+  detection** that made these games fail to dump is fixed — they are detected
+  correctly and dump successfully.
+- **CODM:** the **full-dump** failure is fixed; CODM binaries now produce the
+  complete dump.
+- **C# decompiler (pre-alpha):** many bugs fixed and far more recovered,
+  high-level code than the old v8 beta decompiler (guards flattened to
+  `&&`-chains, object initializers, closure fields, out/ref bodies, class-init
+  checks, tail-return ternaries, smarter dead-store cleanup).
+- **New “Full dump” option (C# options):** keep every type/method when a class
+  filter is active; only the selected DLL gets bodies, the rest render `{ }`.
+- **Class picker:** expanded type lists no longer collapse while scrolling
+  (expansion state now survives list recycling).
+- Desktop/mobile/CLI share the identical v8.5 engine.
+
 ### Native method recovery
 
 - Recover C#-style pseudocode for supported native architectures.

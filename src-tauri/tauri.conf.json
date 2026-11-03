@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Rodroid IL2CPP Dumper",
-  "version": "8.0.0",
+  "version": "8.5.0",
   "identifier": "com.rodroid.il2cppdumper",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Rodroid IL2CPP Dumper v8.0",
+        "title": "Rodroid IL2CPP Dumper v8.5",
         "width": 900,
         "height": 700,
         "minWidth": 700,
