@@ -908,6 +908,32 @@ impl Il2CppDecompiler {
         Ok(())
     }
 
+    /// A Unity engine method implemented natively: its IL2CPP stub lazily
+    /// resolves an icall pointer into a static slot and jumps through it:
+    ///
+    /// ```text
+    /// if (*(nint*)(0x457d000 +3640) == 0)
+    ///     *(nint*)(0x457d000 +3640) = fn_1c023e8(11772415);
+    /// return fnptr_0x3cb8418(this.m_CachedPtr, &stack_48);
+    /// ```
+    ///
+    /// The body IS the resolver machinery, not managed code. Unity's own
+    /// reference assembly declares these `extern` with
+    /// `[MethodImpl(MethodImplOptions.InternalCall)]`, which is what the dump
+    /// prints instead. The caller gates this to `UnityEngine*` assemblies;
+    /// managed helpers there (Vector3.Cross, Mathf.Sin) do not match the
+    /// fingerprint and keep their decompiled bodies.
+    fn is_icall_stub_body(code: &str) -> bool {
+        // Two spellings occur:
+        //   slot = fn_resolve(…);                  (direct)
+        //   v = fn_resolve(…); slot = v; return fnptr_0x…(v);   (via a temp)
+        // Both are the native icall resolver; either ends in a call through
+        // the resolved pointer (`fnptr_0x…`) or an unresolved tail jump.
+        code.contains("*(nint*)(0x")
+            && code.contains("= fn_")
+            && (code.contains("fnptr_0x") || code.contains("indirect jump"))
+    }
+
     fn dump_methods(
         buf: &mut String,
         executor: &mut Il2CppExecutor,
@@ -925,6 +951,19 @@ impl Il2CppDecompiler {
     ) -> Result<()> {
         writeln!(buf, "\n{indent}\t// Methods").ok();
         let method_end = type_def.method_start as usize + type_def.method_count as usize;
+        // Delegate types declare their runtime methods (`Invoke`/`BeginInvoke`/
+        // `EndInvoke`) in the base class; the compiler emits only a `br`
+        // dispatch for them, which used to render as an "indirect jump" body.
+        // They are declarations, not managed code.
+        let is_delegate = type_def.parent_index >= 0
+            && il2cpp
+                .types
+                .get(type_def.parent_index as usize)
+                .map(|p| {
+                    let name = executor.get_type_name(p, metadata, il2cpp, false, false);
+                    name.ends_with("MulticastDelegate") || name.ends_with(".Delegate")
+                })
+                .unwrap_or(false);
 
         // Same picker filters as C# pseudo: when assemblies/types are set, only
         // those types get method bodies (signatures still dump). With
@@ -1084,6 +1123,28 @@ impl Il2CppDecompiler {
             writeln!(buf).ok();
             let method_def = metadata.method_defs[i].clone();
             let is_abstract = (method_def.flags as u32 & method_attributes::ABSTRACT) != 0;
+            let method_pointer = il2cpp.get_method_pointer(image_name, &method_def);
+            let method_name_for_kind =
+                metadata.get_string_from_index(method_def.name_index as i32).unwrap_or_default();
+            let delegate_runtime = is_delegate
+                && matches!(
+                    method_name_for_kind.as_str(),
+                    "Invoke" | "BeginInvoke" | "EndInvoke"
+                );
+            let rva = if method_pointer > 0 {
+                il2cpp.get_rva(method_pointer)
+            } else {
+                0
+            };
+            // `UnityEngine*.dll` icall stubs are native engine code; see
+            // `is_icall_stub_body`. They render as `extern` declarations.
+            let icall_stub = !is_abstract
+                && body_allowed
+                && image_name.starts_with("UnityEngine")
+                && pseudo_c
+                    .as_ref()
+                    .and_then(|m| m.get(&rva))
+                    .is_some_and(|code| Self::is_icall_stub_body(code));
 
             if config.dump_attribute {
                 let attr_indent = format!("{indent}\t");
@@ -1098,13 +1159,10 @@ impl Il2CppDecompiler {
                     &attr_indent,
                 );
             }
-
             if config.dump_method_offset {
-                let method_pointer = il2cpp.get_method_pointer(image_name, &method_def);
                 if is_abstract {
                     write!(buf, "{indent}\t// ").ok();
                 } else if method_pointer > 0 {
-                    let rva = il2cpp.get_rva(method_pointer);
                     let offset = il2cpp.map_vatr(method_pointer).unwrap_or(rva);
                     write!(
                         buf,
@@ -1120,6 +1178,9 @@ impl Il2CppDecompiler {
                 writeln!(buf).ok();
             }
 
+            if icall_stub {
+                writeln!(buf, "{indent}\t[MethodImpl(MethodImplOptions.InternalCall)]").ok();
+            }
             buf.push_str(indent);
             buf.push('\t');
             let mods = executor.get_modifiers(method_def.flags as u32).to_string();
@@ -1206,16 +1267,9 @@ impl Il2CppDecompiler {
 
             buf.push_str(&params.join(", "));
 
-            if is_abstract {
+            if is_abstract || icall_stub || delegate_runtime {
                 writeln!(buf, ");").ok();
             } else {
-                let method_pointer = il2cpp.get_method_pointer(image_name, &method_def);
-                let rva = if method_pointer > 0 {
-                    il2cpp.get_rva(method_pointer)
-                } else {
-                    0
-                };
-
                 let asm_block = disasm
                     .as_ref()
                     .and_then(|_| precomputed_asm.get(&rva))

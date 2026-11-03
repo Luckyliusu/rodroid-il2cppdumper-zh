@@ -28,14 +28,16 @@ declared **pre-alpha** at this revision; alpha is gated on the worklist in
 are all v8.5.
 
 The engine grew from ~111k lines (v8.0) to **~225k lines**; the C# decompiler
-(`recovery/`) alone grew from 78k to **186.5k lines** across 116 files.
+(`recovery/`) alone grew from 78k to **187k lines** across 118 files.
 
-Measured on the reference Temple Run 2 corpus (`OUT_R207`, 24,195 methods):
-**519,404 lines / 18.3 MB** `dump.cs`, `target not emitted` markers down to
-**291** (from 6,449), raw `*(…)` pointer accesses down to **36,902** (from
-55,121), undefined-local annotations **494** in 1,377 suspect methods, zero
-duplicate labels. Same engine in the CLI, the Tauri GUI, and the Android JNI
-core.
+Measured on the reference Temple Run 2 corpus (`OUT_R208AC`, 24,195 methods,
+`Assembly-CSharp` only): **512,595 lines / 18.1 MB** `dump.cs`, `target not
+emitted` markers **291** (from 6,449), raw `*(…)` pointer accesses **36,410**
+(from 55,121), `// body not recoverable` **5** (from 1,248), undefined-local
+annotations **248** lines in 1,280 suspect methods, zero duplicate labels. On
+the second corpus (*Tomb of Maze*, with `UnityEngine.CoreModule`): 1,067 Unity
+internal calls render as `extern` declarations instead of resolver bodies.
+Same engine in the CLI, the Tauri GUI, and the Android JNI core.
 
 V8.5 recovers native IL2CPP method bodies into readable C#-style output,
 alongside the metadata and type information in `dump.cs`.
@@ -50,7 +52,12 @@ alongside the metadata and type information in `dump.cs`.
 - **C# decompiler (pre-alpha):** many bugs fixed and far more recovered,
   high-level code than the old v8 beta decompiler (guards flattened to
   `&&`-chains, object initializers, closure fields, out/ref bodies, class-init
-  checks, tail-return ternaries, smarter dead-store cleanup).
+  checks, tail-return ternaries, smarter dead-store cleanup). In addition:
+  Unity internal calls render as `[MethodImpl(InternalCall)] extern`
+  declarations, fabricated `new T()` lines from runtime metadata tokens are
+  gone, a lost tail value is rebound as `return E;` (which alone recovered
+  413 previously refused bodies), and delegate callbacks render as
+  `onPreCull(cam)`.
 - **New “Full dump” option (C# options):** keep every type/method when a class
   filter is active; only the selected DLL gets bodies, the rest render `{ }`.
 - **Class picker:** expanded type lists no longer collapse while scrolling

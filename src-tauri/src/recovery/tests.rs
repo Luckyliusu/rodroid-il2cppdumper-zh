@@ -12239,6 +12239,54 @@ fn a_guard_whose_taken_edge_leaves_the_method_still_has_a_body() {
     );
 }
 
+/// A VOID body whose only statement was provably dead is EMPTY, not
+/// unrecovered. `AppsFlyerStub.OpenSettings` lifted to a single fabricated
+/// metadata-token allocation (`var appsFlyer = new AppsFlyer();`); once the
+/// write-only sweep removed it the renderer refused with
+/// `// body not recoverable`, which is false — the body was recovered and it
+/// is `{ }`. A value-returning method keeps the refusal: losing every
+/// statement there also lost the return, which is what the marker guards.
+#[test]
+fn a_void_body_emptied_by_dead_code_removal_is_not_marked_unrecoverable() {
+    let alloc = || {
+        Insn::new(
+            Op::NewObj(Some(super::ir::NamedTypeRef {
+                ty: super::types::NamedType {
+                    namespace: "Test".into(),
+                    name: "Widget".into(),
+                    assembly: None,
+                    type_def_index: 7,
+                },
+            })),
+            vec![Operand::Local(5)],
+            0x5000,
+        )
+    };
+    let mk = |returns_value: bool| super::RecoveredIr {
+        insns: vec![alloc(), Insn::new(Op::Return, vec![], 0x5004)],
+        table: locals::LocalTable::default(),
+        returns_value,
+        base_rva: 0x5000,
+    };
+
+    let void_out = csharp::render_method_csharp(
+        &mk(false),
+        "OpenSettings",
+        false,
+        &[],
+        &ManagedType::Unknown,
+        -1,
+    );
+    assert!(
+        !void_out.contains("body not recoverable"),
+        "a legitimately empty void body must not refuse, got:\n{void_out}"
+    );
+    assert!(
+        !void_out.contains("new Widget"),
+        "the unread allocation must not survive either, got:\n{void_out}"
+    );
+}
+
 /// Getter/setter idioms must fire on BOTH call shapes.
 ///
 /// Two distinct defects shared a symptom (`get_X()`/`set_X(v)` surviving as

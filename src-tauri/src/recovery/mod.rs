@@ -5258,6 +5258,7 @@ impl RecoveryContext {
                 format!("{}.{}", ns, type_name)
             };
             let mut local = Vec::new();
+            use crate::il2cpp::enums::field_attributes;
             for fi in 0..field_count {
                 let global_fi = field_start + fi;
                 let Some(field_def) = metadata.field_defs.get(global_fi) else {
@@ -5267,7 +5268,15 @@ impl RecoveryContext {
                     continue;
                 };
                 let is_static = (field_il2cpp_type.attrs & 0x0010) != 0;
-                if !is_static {
+                // CONSTANTS and FieldRVA data are NOT in the static block:
+                // giving them a storage offset collides with the real static
+                // field at that offset. Camera's const `kMaxAperture` stole
+                // the delegate field's slot and named `onPreCull` after it.
+                let is_literal =
+                    (field_il2cpp_type.attrs & field_attributes::LITERAL) != 0;
+                let has_field_rva =
+                    (field_il2cpp_type.attrs & field_attributes::HAS_FIELD_RVA) != 0;
+                if !is_static || is_literal || has_field_rva {
                     continue;
                 }
                 let raw_offset = il2cpp.get_field_offset_from_index(

@@ -17707,6 +17707,12 @@ pub fn render_method_csharp_full_chains(
         }
     }
     let (mut body_stmts, _) = st.emit_region(0, &HashSet::new(), &loops, &[], 0);
+    // Did the walk recover ANY statement? The late sweeps legitimately empty a
+    // body whose only content was provably dead (`AppsFlyerStub.OpenSettings`,
+    // whose sole statement was a fabricated metadata-token allocation). For
+    // those, "body not recoverable" would be a false refusal: the body WAS
+    // recovered and it is empty.
+    let recovered_statements = !body_stmts.is_empty();
     CALLTRACE.with(|c| c.set(false));
     super::tm_add(&super::timing::R_WALK, t_walk);
     // `ILR_TRACE`: per-stage label provenance for the late pipeline. Each
@@ -18082,7 +18088,22 @@ pub fn render_method_csharp_full_chains(
             .count();
         UNEMITTED_BLOCKS.with(|c| c.set(un));
         TOTAL_BLOCKS.with(|c| c.set(sc.blocks.len()));
-        if un > 0 {
+        // The warning is about an UNRECOVERED INDIRECT DISPATCH: some `br xN`
+        // (or unresolved jump table) in the walked code leaves blocks no edge
+        // reaches. When the reachable blocks contain no such escape, the
+        // unwalked blocks cannot belong to this method at all — they are the
+        // next small functions that the metadata-derived body extent includes
+        // (`mov w0,#1; ret` neighbors). Warning about them stamped correct
+        // one-line methods ("return 1;") with "2 of 3 blocks unreachable".
+        let has_indirect_escape = (0..sc.blocks.len())
+            .filter(|b| visited.contains(b))
+            .any(|b| {
+                let end = sc.blocks[b].end;
+                end > 0
+                    && end <= ir.insns.len()
+                    && matches!(ir.insns[end - 1].op, Op::IndirectCall)
+            });
+        if un > 0 && has_indirect_escape {
             body_stmts.insert(
                 0,
                 Stmt::Comment(format!(
@@ -19194,6 +19215,27 @@ pub fn render_method_csharp_full_chains(
     if crate::recovery::env_flags::flag("ILR_RECON") && class_init_stores > 0 {
         eprintln!("[recon] class_init_stores: {class_init_stores} flag store(s) named");
     }
+    // DELEGATE TAIL INVOCATIONS: `fnptr_0x…(del.method_code, args, del.method,
+    // del.invoke_impl)` is the native delegate call convention; C# writes
+    // `del(args)`.
+    let delegate_calls = super::reconstruct::delegate_invoke::apply(&mut body_stmts);
+    if crate::recovery::env_flags::flag("ILR_RECON") && delegate_calls > 0 {
+        eprintln!("[recon] delegate_invoke: {delegate_calls} call(s) folded");
+    }
+    // VALUE TAIL BINDING. In a value-returning method `E; return;` can only
+    // mean `return E;` — the link between the call's result slot and the
+    // return register is what got lost (`Camera.get_current` `blr`s the
+    // resolved `get_currentInternal` pointer and x0 never reaches the
+    // `Return`). Before the ternary fold so a bound value can still join a
+    // merged guard.
+    let tail_values = if ir.returns_value {
+        super::reconstruct::return_tail_fold::apply(&mut body_stmts)
+    } else {
+        0
+    };
+    if crate::recovery::env_flags::flag("ILR_RECON") && tail_values > 0 {
+        eprintln!("[recon] return_tail_fold: {tail_values} tail value(s) bound");
+    }
     // TAIL GUARD CASCADE. A flat sequence of early exits arrives as a stair
     // of nested `if`s. At the tail of a VOID method that stair is exactly the
     // flat guard list (`if (x == null) return; use(x); …`), so unroll it
@@ -19250,10 +19292,17 @@ pub fn render_method_csharp_full_chains(
         FALLBACK
             .empty_body
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        if !ir
-            .insns
-            .iter()
-            .all(|i| matches!(i.op, Op::Nop | Op::Return))
+        // A body the walk filled and the sweeps then proved dead is EMPTY,
+        // not unrecovered. Restricted to VOID methods on purpose: a
+        // value-returning method that lost every statement also lost its
+        // return, which is precisely the over-deletion this marker exists to
+        // catch, so it keeps refusing.
+        let soundly_emptied = recovered_statements && !ir.returns_value;
+        if !soundly_emptied
+            && !ir
+                .insns
+                .iter()
+                .all(|i| matches!(i.op, Op::Nop | Op::Return))
         {
             r.line("// body not recoverable");
         }

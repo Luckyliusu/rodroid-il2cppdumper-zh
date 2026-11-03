@@ -175,6 +175,22 @@ fn sweep_stmt(s: &mut Stmt, mentioned: &HashSet<String>, n: &mut usize) -> bool 
                 let call = rhs.clone();
                 *s = Stmt::Eval(call);
                 *n += 1;
+                return false;
+            }
+            if matches!(rhs, Expr::NewObj(_, args) if args.is_empty()) {
+                // An UNREAD allocation is unobservable. `il2cpp_object_new`
+                // runs no managed code, and a real `new T()` in source always
+                // keeps its result (stored, passed, or thrown). A ZERO-ARGUMENT
+                // allocation whose name is read nowhere is the runtime's
+                // metadata token that `key_function_recovery` sampled into the
+                // allocation family — `Camera.FireOnPreCull`'s
+                // `var camera = new Camera();` inside its class-init guard,
+                // `AppsFlyer.OpenSettings`'s entire "body". IR-level liveness
+                // cannot see this: every call records `x0..x7` as ABI uses, so
+                // the token looks consumed. An allocation WITH arguments is
+                // kept — its constructor call may touch global state.
+                *n += 1;
+                return true;
             }
             false
         }
@@ -246,6 +262,40 @@ mod tests {
         let mut s = vec![assign("x", call)];
         assert_eq!(apply(&mut s), 1);
         assert!(matches!(&s[0], Stmt::Eval(Expr::Call { .. })));
+    }
+
+    /// The metadata-token shape (`Camera.FireOnPreCull`,
+    /// `AppsFlyer.OpenSettings`): a bare allocation nobody reads.
+    #[test]
+    fn an_unread_bare_allocation_is_removed() {
+        let mut s = vec![
+            assign("camera", Expr::NewObj("Camera".into(), vec![])),
+            Stmt::Eval(Expr::Var("cam".into())),
+        ];
+        assert_eq!(apply(&mut s), 1);
+        assert_eq!(s.len(), 1);
+    }
+
+    /// Its constructor may write global state, so an allocation WITH arguments
+    /// is not provably dead.
+    #[test]
+    fn an_unread_allocation_with_arguments_is_kept() {
+        let mut s = vec![assign(
+            "ex",
+            Expr::NewObj("IndexOutOfRangeException".into(), vec![Expr::Int(1)]),
+        )];
+        assert_eq!(apply(&mut s), 0);
+        assert_eq!(s.len(), 1);
+    }
+
+    #[test]
+    fn a_read_allocation_keeps_its_statement() {
+        let mut s = vec![
+            assign("list", Expr::NewObj("List`1".into(), vec![])),
+            Stmt::Eval(Expr::Var("list".into())),
+        ];
+        assert_eq!(apply(&mut s), 0);
+        assert_eq!(s.len(), 2);
     }
 
     #[test]
