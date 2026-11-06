@@ -34,7 +34,7 @@ function loadPrefs(): PersistedPrefs {
 function defaultPrefs(): PersistedPrefs {
   return {
     themeMode: "system",
-    language: "en",
+    language: "zh",
     config: { ...DEFAULT_CONFIG },
     outputDir: "IL2CppDumper",
   };

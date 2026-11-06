@@ -11,8 +11,8 @@
   let actionsVisible = $state(false);
 
   function getLogStyle(log: string): { color: string; showCheck: boolean } {
-    if (log.startsWith("Done!")) return { color: "var(--np-color-primary)", showCheck: true };
-    if (log.includes("generated")) return { color: "var(--np-color-tertiary)", showCheck: true };
+    if (log.startsWith("Done!") || log.startsWith("完成")) return { color: "var(--np-color-primary)", showCheck: true };
+    if (log.includes("generated") || log.includes("已生成")) return { color: "var(--np-color-tertiary)", showCheck: true };
     return { color: "var(--np-color-on-surface-variant)", showCheck: false };
   }
 
@@ -80,7 +80,7 @@
               <Icon>terminal</Icon>
               <span class="text-xs font-semibold uppercase tracking-widest m3-secondary">{$t.label_log}</span>
             </div>
-            <span class="m3-badge m3-badge-muted">{$logs.length} entries</span>
+            <span class="m3-badge m3-badge-muted">{$logs.length} 条记录</span>
           </div>
           <div class="m3-log-panel max-h-64 overflow-y-auto p-3 space-y-1">
             {#each $logs as log}

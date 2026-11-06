@@ -53,7 +53,7 @@
 
 <div class="flex flex-col h-full overflow-y-auto animate-slide-up m3-app">
   <div class="m3-top-bar flex items-center gap-3 px-5 py-4">
-    <IconButton aria-label="Back" onclick={() => currentScreen.set("settings")}>
+    <IconButton aria-label="返回" onclick={() => currentScreen.set("settings")}>
       <Icon>arrow_back</Icon>
     </IconButton>
     <h2 class="text-lg font-semibold">{$t.label_about}</h2>
@@ -160,7 +160,7 @@
         style:opacity={linksVisible ? 1 : 0}
       >
         <div bind:this={likeContainer} class="size-8"></div>
-        <p class="text-xs m3-secondary">Made with Rust by Rodroid Mods</p>
+        <p class="text-xs m3-secondary">由 Rodroid Mods 使用 Rust 打造</p>
       </div>
     </div>
   </div>

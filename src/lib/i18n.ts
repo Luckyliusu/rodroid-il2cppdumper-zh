@@ -1,6 +1,6 @@
 export type ThemeMode = "system" | "light" | "dark";
 
-export type AppLanguage = "en" | "sq" | "hi" | "id" | "jv" | "es" | "ar";
+export type AppLanguage = "en" | "sq" | "hi" | "id" | "jv" | "es" | "ar" | "zh";
 
 export interface LanguageInfo {
   code: AppLanguage;
@@ -9,6 +9,7 @@ export interface LanguageInfo {
 
 export const LANGUAGES: LanguageInfo[] = [
   { code: "en", displayName: "English" },
+  { code: "zh", displayName: "简体中文" },
   { code: "sq", displayName: "Shqip" },
   { code: "hi", displayName: "Hindi" },
   { code: "id", displayName: "Bahasa Indonesia" },
@@ -160,6 +161,86 @@ const en: TranslationKeys = {
   class_picker_loading: "Loading class tree…", class_picker_empty: "No matching types",
   class_picker_types_capped: "+{n} more types hidden — search to narrow",
   setting_compiler_layout: "Compiler Layout", layout_gcc: "GCC", layout_msvc: "MSVC",
+};
+
+const zh: TranslationKeys = {
+  app_name: "Rodroid IL2CPP 转储器", settings: "设置", label_about: "关于",
+  select_binary: "选择二进制文件", select_metadata: "选择 global-metadata.dat",
+  start_dump: "开始转储", new_dump: "新建转储", try_again: "重试", dump_again: "再次转储",
+  dump_options: "转储选项",
+  label_binary: "IL2CPP 二进制文件", label_metadata: "元数据文件", label_log: "日志",
+  label_output: "输出", label_generation: "生成",
+  label_advanced_generics: "高级泛型转储", label_advanced: "高级",
+  label_format: "格式", label_unity: "Unity",
+  label_appearance: "外观", label_theme: "主题", label_language: "语言",
+  label_output_dir: "输出目录", setting_output_dir_desc: "转储结果的保存位置",
+  output_reset: "恢复默认",
+  status_processing: "处理中", dump_complete: "转储完成", dump_failed: "转储失败",
+  theme_system: "跟随系统", theme_light: "浅色", theme_dark: "深色",
+  setting_dump_method: "转储方法", setting_dump_field: "转储字段",
+  setting_dump_property: "转储属性", setting_dump_attribute: "转储特性",
+  setting_dump_method_offset: "方法偏移", setting_dump_field_offset: "字段偏移",
+  setting_dump_typedef_index: "TypeDef 索引", setting_dump_assembly_name: "程序集名称",
+  setting_generate_struct: "生成结构体", setting_generate_dummy_dll: "生成 Dummy DLL",
+  setting_dummy_dll_add_token: "Dummy DLL 添加 Token", setting_split_dump_per_type: "按类型拆分",
+  setting_generate_generics_dump: "生成泛型转储",
+  setting_dump_generics_rgctx: "转储 RGCTX",
+  setting_dump_generics_method_specs: "转储 MethodSpecs",
+  setting_dump_generics_custom_attributes: "转储自定义特性",
+  setting_dump_generics_string_literals: "转储字符串字面量",
+  setting_dump_generics_metadata_usages: "转储 Metadata Usages",
+  setting_dump_generics_vtables: "转储 VTables",
+  setting_dump_generics_interfaces: "转储接口",
+  setting_codm: "强制 CODM 元数据变体",
+  label_static_metadata: "静态字段元数据",
+  setting_dump_static_metadata: "导出 Thread-Static / FieldRVA",
+  setting_dump_field_rva_data: "包含 FieldRVA 十六进制数据",
+  setting_max_field_rva_dump_bytes: "FieldRVA 最大转储字节数",
+  setting_force_il2cpp_version: "强制 IL2CPP 版本", setting_force_version_label: "IL2CPP 版本",
+  setting_force_dump: "强制转储", setting_no_redirected_pointer: "不重定向指针",
+  label_disassembly: "反汇编", setting_dump_disassembly: "启用反汇编",
+  setting_dump_disassembly_target: "输出目标",
+  dialog_ok: "确定", dialog_cancel: "取消",
+  setting_dump_disassembly_hex_bytes: "十六进制字节",
+  setting_dump_disassembly_field_names: "字段名",
+  setting_dump_disassembly_annotations: "注释",
+  setting_dump_disassembly_cfg: "CFG 分析",
+  setting_max_disassembly_instructions: "最大指令数",
+  dialog_dump_address_title: "检测到转储文件",
+  dialog_dump_address_desc: "输入 IL2CPP 转储地址，或跳过后不使用该地址继续。",
+  dialog_skip: "跳过", dialog_manual_title: "手动模式",
+  dialog_manual_desc: "自动检测失败。请手动输入 CodeRegistration 与 MetadataRegistration 地址。",
+  setting_code_registration: "CodeRegistration（十六进制）",
+  setting_metadata_registration: "MetadataRegistration（十六进制）",
+  about_version: "v8.5", about_description: "面向 Unity 游戏的 IL2CPP 二进制转储器 — 由 Rust 驱动",
+  about_developer: "开发者", about_powered_by: "由 Rust 驱动 🦀",
+  about_community: "社区",
+  about_channel_1: "Telegram 频道", about_channel_1_desc: "更新与发布",
+  about_channel_2: "Telegram 频道 2", about_channel_2_desc: "更多内容与资讯",
+  about_group: "Telegram 群组", about_group_desc: "社区交流与支持",
+  about_report_bugs: "报告问题",
+  target_both: "两者", target_dump_cs: "dump.cs", target_diffable_cs: "DiffableCs",
+  label_cpp_headers: "C++ 头文件", setting_generate_cpp_scaffold: "生成 C++ 脚手架",
+  setting_mangle_names: "重整名称", setting_enhanced_ida_metadata: "增强的 IDA 元数据",
+  setting_generate_unity_headers: "生成 Unity 头文件", setting_use_topological_sort: "拓扑排序",
+  label_method_bodies: "方法体", method_body_off: "关闭", method_body_assembly: "汇编",
+  method_body_csharp: "C#",
+  method_body_beta_note: "原生 C# 反编译器（测试版）",
+  setting_annotate_recovery: "标注恢复质量",
+  setting_il_recovery: "将 IL 恢复到 DummyDLL",
+  setting_csharp_full_dump: "完整转储（保留所有类型，选择范围外为空方法体）",
+  setting_pseudo_c_max_body: "最大方法体大小（0 = 全部）",
+  setting_pseudo_c_target: "C# 输出目标",
+  class_picker_open: "选择类",
+  class_picker_title: "类过滤器",
+  class_picker_subtitle: "不选择即转储全部。缩小程序集或类型范围 — 只有选中的项才会在 dump.cs 中带方法体。",
+  class_picker_done: "完成", class_picker_search: "搜索程序集、命名空间、类型",
+  class_picker_preset_all: "全部", class_picker_preset_csharp: "Assembly-CSharp*",
+  class_picker_preset_clear: "清空",
+  class_picker_summary_all: "包含所有程序集和类型",
+  class_picker_loading: "正在加载类树…", class_picker_empty: "没有匹配的类型",
+  class_picker_types_capped: "另有 +{n} 个类型已隐藏 — 搜索以缩小范围",
+  setting_compiler_layout: "编译器布局", layout_gcc: "GCC", layout_msvc: "MSVC",
 };
 
 const sq: TranslationKeys = {
@@ -441,8 +522,8 @@ const jv: TranslationKeys = { ...en,
   setting_compiler_layout: "Tata Letak Kompiler", layout_gcc: "GCC", layout_msvc: "MSVC",
 };
 
-const translations: Record<AppLanguage, TranslationKeys> = { en, sq, ar, es, hi, id, jv };
+const translations: Record<AppLanguage, TranslationKeys> = { en, sq, ar, es, hi, id, jv, zh };
 
 export function getTranslations(lang: AppLanguage): TranslationKeys {
-  return translations[lang] || en;
+  return translations[lang] || zh;
 }

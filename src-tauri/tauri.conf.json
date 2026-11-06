@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Rodroid IL2CPP Dumper v8.5",
+        "title": "Rodroid IL2CPP 转储器 v8.5",
         "width": 900,
         "height": 700,
         "minWidth": 700,

@@ -54,7 +54,7 @@
       const parsed = JSON.parse(raw) as TypeTreeAssembly[];
       typeTree.set(Array.isArray(parsed) ? parsed : []);
     } catch (e: any) {
-      typeTreeError.set(e?.message || String(e) || "Failed to load class tree");
+      typeTreeError.set(e?.message || String(e) || "加载类树失败");
       typeTree.set([]);
     } finally {
       typeTreeLoading.set(false);
@@ -65,7 +65,7 @@
     const osType = await type();
     const file = await open({
       multiple: false,
-      ...(osType === "ios" ? {} : { filters: [{ name: "IL2CPP Binary", extensions: ["so", "dll", "exe", "dylib", "nso", "wasm", "*"] }] }),
+      ...(osType === "ios" ? {} : { filters: [{ name: "IL2CPP 二进制文件", extensions: ["so", "dll", "exe", "dylib", "nso", "wasm", "*"] }] }),
     });
     if (file) {
       let finalPath = file;
@@ -78,7 +78,7 @@
           finalPath = targetPath;
         } catch (e: any) {
           console.error("iOS copy error (binary):", e);
-          alert("iOS Copy Error: " + (e?.message || e));
+          alert("iOS 复制错误：" + (e?.message || e));
         }
       }
 
@@ -96,7 +96,7 @@
     const osType = await type();
     const file = await open({
       multiple: false,
-      ...(osType === "ios" ? {} : { filters: [{ name: "Metadata", extensions: ["dat", "*"] }] }),
+      ...(osType === "ios" ? {} : { filters: [{ name: "元数据文件", extensions: ["dat", "*"] }] }),
     });
     if (file) {
       let finalPath = file;
@@ -109,7 +109,7 @@
           finalPath = targetPath;
         } catch (e: any) {
           console.error("iOS copy error (metadata):", e);
-          alert("iOS Copy Error: " + (e?.message || e));
+          alert("iOS 复制错误：" + (e?.message || e));
         }
       }
       metadataPath.set(finalPath);
@@ -159,7 +159,7 @@
     </div>
     <PathInput
       bind:value={binaryValue}
-      placeholder="No file selected"
+      placeholder="未选择文件"
       title={binaryValue || undefined}
       onchange={() => onBinaryChange(binaryValue)}
     />
@@ -189,7 +189,7 @@
     </div>
     <PathInput
       bind:value={metadataValue}
-      placeholder="No file selected"
+      placeholder="未选择文件"
       title={metadataValue || undefined}
       onchange={() => onMetadataChange(metadataValue)}
     />
@@ -212,7 +212,7 @@
               {:else if selectedAssemblies === 0 && selectedTypes === 0}
                 {$t.class_picker_summary_all}
               {:else}
-                {selectedAssemblies} assemblies · {selectedTypes} types
+                已选择 {selectedAssemblies} 个程序集 · {selectedTypes} 个类型
               {/if}
             </div>
           </div>
@@ -226,7 +226,7 @@
         </Button>
       </div>
       {#if !$typeTreeLoading && !$typeTreeError && $typeTree.length}
-        <p class="text-[11px] m3-secondary">{$typeTree.length} assemblies loaded</p>
+        <p class="text-[11px] m3-secondary">已加载 {$typeTree.length} 个程序集</p>
       {/if}
     </div>
   </AnimatedExpand>

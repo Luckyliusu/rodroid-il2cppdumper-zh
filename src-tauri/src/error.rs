@@ -1,34 +1,34 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Invalid metadata file: {0}")]
+    #[error("无效的元数据文件: {0}")]
     InvalidMetadata(String),
 
-    #[error("Unsupported metadata version: {0}")]
+    #[error("不支持的元数据版本: {0}")]
     UnsupportedVersion(i32),
 
-    #[error("Address 0x{0:x} not in any segment")]
+    #[error("地址 0x{0:x} 不在任何段内")]
     AddressNotMapped(u64),
 
-    #[error("Invalid binary format: {0}")]
+    #[error("无效的二进制格式: {0}")]
     InvalidFormat(String),
 
     #[error(
-        "Read out of bounds: offset 0x{offset:x}, size {size} \
-         (truncated file, bad offsets, or encrypted/corrupted data)"
+        "读取越界: 偏移 0x{offset:x}，大小 {size} \
+         （文件被截断、偏移错误，或数据已加密/损坏）"
     )]
     OutOfBounds { offset: u64, size: usize },
 
-    #[error("Invalid array size: count={count}, element_size={elem_size} ({context})")]
+    #[error("无效的数组大小: count={count}, element_size={elem_size} ({context})")]
     InvalidArraySize {
         count: u64,
         elem_size: usize,
         context: String,
     },
 
-    #[error("IO error: {0}")]
+    #[error("IO 错误: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Cyclic value-type dependency: {0}")]
+    #[error("循环的值类型依赖: {0}")]
     CyclicDependency(String),
 
     #[error("{0}")]
@@ -39,21 +39,21 @@ impl Error {
     /// Enrich low-level read failures with actionable metadata-protection hints.
     pub fn with_metadata_context(self, file_len: u64) -> Self {
         const HINT: &str = "\
-Common causes: encrypted/obfuscated global-metadata.dat, truncated extract, or wrong Unity layout. \
-Valid files start with magic AF 1B B1 FA. Protected games often need a runtime memory dump of \
-decrypted metadata before dumping.";
+常见原因: global-metadata.dat 已加密/混淆、提取不完整，或 Unity 布局不匹配。 \
+有效文件以 magic AF 1B B1 FA 开头。受保护的游戏通常需要先获取运行时内存转储， \
+在转储前得到已解密的元数据。";
 
         match self {
             Error::OutOfBounds { offset, size } => Error::InvalidMetadata(format!(
-                "Read past end of metadata while parsing tables \
-                 (offset 0x{offset:X}, need {size} bytes, file size {file_len}). {HINT}"
+                "解析表时读取超出元数据末尾 \
+                 （偏移 0x{offset:X}，需要 {size} 字节，文件大小 {file_len}）。{HINT}"
             )),
             Error::Io(ref e)
                 if e.kind() == std::io::ErrorKind::UnexpectedEof
                     || e.to_string().contains("fill whole buffer") =>
             {
                 Error::InvalidMetadata(format!(
-                    "Unexpected end of metadata file while parsing tables (file size {file_len}). {HINT}"
+                    "解析表时元数据文件意外结束（文件大小 {file_len}）。{HINT}"
                 ))
             }
             Error::InvalidArraySize {
@@ -61,9 +61,9 @@ decrypted metadata before dumping.";
                 elem_size,
                 context,
             } => Error::InvalidMetadata(format!(
-                "Implausible metadata table size in '{context}' \
-                 (count={count}, element_size={elem_size}, file size {file_len}). \
-                 Header fields look corrupted — often encryption or a truncated file. {HINT}"
+                "'{context}' 中元数据表大小异常 \
+                 （count={count}, element_size={elem_size}, 文件大小 {file_len}）。 \
+                 头部字段疑似损坏 — 通常是加密或文件被截断所致。{HINT}"
             )),
             other => other,
         }
@@ -72,25 +72,25 @@ decrypted metadata before dumping.";
     /// Short UI-facing string (Android / Tauri toast).
     pub fn user_message(&self) -> String {
         match self {
-            Error::InvalidMetadata(msg) => format!("Metadata error: {msg}"),
+            Error::InvalidMetadata(msg) => format!("元数据错误: {msg}"),
             Error::UnsupportedVersion(v) => format!(
-                "Metadata error: unsupported metadata version {v}. \
-                 Update the dumper or check for a corrupted/encrypted file."
+                "元数据错误: 不支持的元数据版本 {v}。 \
+                 请更新转储器，或检查文件是否已损坏/加密。"
             ),
             Error::OutOfBounds { offset, size } => format!(
-                "Metadata error: read past end of file (offset 0x{offset:X}, size {size}). \
-                 File may be truncated or encrypted."
+                "元数据错误: 读取超出文件末尾（偏移 0x{offset:X}，大小 {size}）。 \
+                 文件可能已被截断或加密。"
             ),
             Error::InvalidArraySize { context, .. } => format!(
-                "Metadata error: invalid table size ({context}). \
-                 File may be encrypted or corrupted."
+                "元数据错误: 表大小无效 ({context})。 \
+                 文件可能已加密或损坏。"
             ),
             Error::Io(e)
                 if e.kind() == std::io::ErrorKind::UnexpectedEof
                     || e.to_string().contains("fill whole buffer") =>
             {
-                "Metadata error: unexpected end of file while reading metadata \
-                 (often encrypted, truncated, or wrong file)."
+                "元数据错误: 读取元数据时文件意外结束 \
+                 （通常是已加密、被截断，或文件不对）。"
                     .into()
             }
             other => other.to_string(),

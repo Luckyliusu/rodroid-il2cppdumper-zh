@@ -52,7 +52,7 @@
       style:opacity={titleVisible ? 1 : 0}
       style:transform="translateY({titleVisible ? 0 : 20}px)"
     >
-      Rodroid IL2CPP Dumper
+      Rodroid IL2CPP 转储器
     </h1>
 
     <div

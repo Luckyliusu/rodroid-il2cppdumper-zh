@@ -46,7 +46,7 @@
 
 {#if dumpOpen}
   <div class="m3-dialog-scrim" role="presentation">
-    <button type="button" class="absolute inset-0 cursor-default" aria-label="Close dialog" onclick={skipDumpAddress}></button>
+    <button type="button" class="absolute inset-0 cursor-default" aria-label="关闭对话框" onclick={skipDumpAddress}></button>
     <div class="m3-dialog p-6 space-y-5 max-w-md">
       <div class="space-y-2">
         <div class="flex items-center gap-2.5">
@@ -60,7 +60,7 @@
       <TextField variant="filled" placeholder="0x10000" bind:value={dumpAddress} />
       <div class="m3-dialog-actions">
         <Button variant="text" onclick={skipDumpAddress}>{$t.dialog_skip}</Button>
-        <Button variant="filled" onclick={submitDumpAddress}>OK</Button>
+        <Button variant="filled" onclick={submitDumpAddress}>{$t.dialog_ok}</Button>
       </div>
     </div>
   </div>
@@ -68,7 +68,7 @@
 
 {#if manualOpen}
   <div class="m3-dialog-scrim" role="presentation">
-    <button type="button" class="absolute inset-0 cursor-default" aria-label="Close dialog" onclick={cancelManual}></button>
+    <button type="button" class="absolute inset-0 cursor-default" aria-label="关闭对话框" onclick={cancelManual}></button>
     <div class="m3-dialog p-6 space-y-5 max-w-md">
       <div class="space-y-2">
         <div class="flex items-center gap-2.5">
@@ -96,8 +96,8 @@
         />
       </div>
       <div class="m3-dialog-actions">
-        <Button variant="text" onclick={cancelManual}>Cancel</Button>
-        <Button variant="filled" disabled={!isValidHex(codeReg) || !isValidHex(metaReg)} onclick={submitManualAddresses}>OK</Button>
+        <Button variant="text" onclick={cancelManual}>{$t.dialog_cancel}</Button>
+        <Button variant="filled" disabled={!isValidHex(codeReg) || !isValidHex(metaReg)} onclick={submitManualAddresses}>{$t.dialog_ok}</Button>
       </div>
     </div>
   </div>

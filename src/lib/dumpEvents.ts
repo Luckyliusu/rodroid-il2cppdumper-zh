@@ -29,7 +29,7 @@ async function registerDumpEvents(): Promise<void> {
         appState.set("result");
         currentScreen.set("result");
       } else {
-        errorMessage.set(payload.error_message ?? "Dump failed");
+        errorMessage.set(payload.error_message ?? "转储失败");
         appState.set("error");
         currentScreen.set("error");
       }

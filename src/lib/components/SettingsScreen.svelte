@@ -19,7 +19,7 @@
   }
 
   async function pickOutputDir() {
-    const dir = await open({ directory: true, title: "Select Output Directory" });
+    const dir = await open({ directory: true, title: "选择输出目录" });
     if (dir) outputDir.set(dir);
   }
 </script>
@@ -36,7 +36,7 @@
 
 <div class="flex flex-col h-full overflow-y-auto animate-slide-up m3-app">
   <div class="m3-top-bar flex items-center gap-3 px-5 py-4">
-    <IconButton aria-label="Back" onclick={() => currentScreen.set("idle")}>
+    <IconButton aria-label="返回" onclick={() => currentScreen.set("idle")}>
       <Icon>arrow_back</Icon>
     </IconButton>
     <h2 class="text-lg font-semibold">{$t.settings}</h2>
@@ -121,7 +121,7 @@
           <Icon>folder_open</Icon>
           <span class="m3-label">{$t.label_output_dir}</span>
         </div>
-        <IconButton variant="tonal" aria-label="Browse output directory" onclick={pickOutputDir}>
+        <IconButton variant="tonal" aria-label="浏览输出目录" onclick={pickOutputDir}>
           <Icon>upload_file</Icon>
         </IconButton>
       </div>

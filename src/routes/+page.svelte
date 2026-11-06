@@ -23,7 +23,7 @@
   import InputDialog from "$lib/components/InputDialog.svelte";
   import { setupDumpEvents } from "$lib/dumpEvents";
 
-  let currentOs = $state("Desktop");
+  let currentOs = $state("桌面端");
   let draftConfig = $state<DumperConfig>({ ...DEFAULT_CONFIG });
 
   $effect(() => {
@@ -78,7 +78,7 @@
         currentOs = "Android";
         baseDir = await documentDir();
       } else {
-        currentOs = "Desktop";
+        currentOs = "桌面端";
         baseDir = await downloadDir();
       }
 
@@ -112,7 +112,7 @@
 </script>
 
 <svelte:head>
-  <title>Rodroid IL2CPP Dumper</title>
+  <title>Rodroid IL2CPP 转储器</title>
 </svelte:head>
 
 {#if $currentScreen === "splash"}
@@ -153,7 +153,7 @@
               </span>
             {/if}
             {#if $currentScreen === "idle"}
-              <IconButton aria-label="Settings" onclick={() => currentScreen.set("settings")}>
+              <IconButton aria-label={$t.settings} onclick={() => currentScreen.set("settings")}>
                 <Icon>settings</Icon>
               </IconButton>
             {/if}

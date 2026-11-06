@@ -123,7 +123,7 @@
 </script>
 
 <div class="m3-dialog-scrim m3-scrim-enter" role="presentation">
-  <button type="button" class="absolute inset-0 cursor-default" aria-label="Close" onclick={onclose}></button>
+  <button type="button" class="absolute inset-0 cursor-default" aria-label="关闭" onclick={onclose}></button>
   <div class="m3-dialog m3-dialog-enter max-w-3xl h-[min(860px,92vh)]" role="dialog" aria-labelledby="class-picker-title">
     <div class="p-6 pb-3 shrink-0 space-y-3">
       <div class="flex items-center gap-3">
@@ -134,7 +134,7 @@
           <h3 id="class-picker-title" class="text-lg font-semibold">{$t.class_picker_title}</h3>
           <p class="text-xs m3-secondary">{$t.class_picker_subtitle}</p>
         </div>
-        <IconButton aria-label="Close" onclick={onclose}>
+        <IconButton aria-label="关闭" onclick={onclose}>
           <Icon>close</Icon>
         </IconButton>
       </div>
@@ -155,7 +155,7 @@
         {#if selectedAssemblies.size === 0 && selectedTypes.size === 0}
           {$t.class_picker_summary_all}
         {:else}
-          {selectedAssemblies.size} assemblies · {selectedTypes.size} types selected
+          已选择 {selectedAssemblies.size} 个程序集 · {selectedTypes.size} 个类型
         {/if}
       </p>
     </div>
@@ -183,7 +183,7 @@
                 onclick={() => (expanded[asm.assembly] = !expanded[asm.assembly])}
               >
                 <div class="font-medium truncate">{asm.assembly}</div>
-                <div class="text-xs m3-secondary">{asm.methodCount} methods</div>
+                <div class="text-xs m3-secondary">{asm.methodCount} 个方法</div>
               </button>
               <Icon>{expanded[asm.assembly] ? "expand_less" : "expand_more"}</Icon>
             </div>
@@ -193,7 +193,7 @@
                 {#each capped.namespaces as ns (ns.namespace + asm.assembly)}
                   <div>
                     <div class="text-xs font-semibold mb-1" style="color: var(--md-sys-color-tertiary)">
-                      {ns.namespace || "<global>"}
+                      {ns.namespace || "<全局命名空间>"}
                     </div>
                     {#each ns.types as ty (ty.fullName)}
                       <label class="flex items-start gap-2 py-1.5 px-1 rounded-lg hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]">
@@ -205,7 +205,7 @@
                         />
                         <span class="min-w-0">
                           <span class="block text-sm break-all">{ty.fullName}</span>
-                          <span class="block text-xs m3-secondary">{ty.methodCount} methods</span>
+                          <span class="block text-xs m3-secondary">{ty.methodCount} 个方法</span>
                         </span>
                       </label>
                     {/each}

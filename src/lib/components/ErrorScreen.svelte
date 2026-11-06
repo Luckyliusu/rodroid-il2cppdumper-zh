@@ -57,18 +57,18 @@
               <Icon>terminal</Icon>
               <span class="text-xs font-semibold uppercase tracking-widest m3-secondary">{$t.label_log}</span>
             </div>
-            <span class="m3-badge m3-badge-error">{$logs.length} entries</span>
+            <span class="m3-badge m3-badge-error">{$logs.length} 条记录</span>
           </div>
           <div class="m3-log-panel max-h-64 overflow-y-auto p-3 space-y-1">
             {#each $logs as log}
               <div class="flex items-start gap-2 py-0.5">
                 <span
                   class="size-1.5 rounded-full mt-1.5 shrink-0"
-                  style="background: {log.startsWith('ERROR') ? 'var(--np-color-error)' : 'var(--np-color-on-surface-variant)'}; opacity: {log.startsWith('ERROR') ? '1' : '0.35'};"
+                  style="background: {(log.startsWith('ERROR') || log.startsWith('错误')) ? 'var(--np-color-error)' : 'var(--np-color-on-surface-variant)'}; opacity: {(log.startsWith('ERROR') || log.startsWith('错误')) ? '1' : '0.35'};"
                 ></span>
                 <p
                   class="text-[11px] font-mono break-all select-text leading-relaxed"
-                  style="color: {log.startsWith('ERROR') ? 'var(--np-color-error)' : 'var(--np-color-on-surface-variant)'};"
+                  style="color: {(log.startsWith('ERROR') || log.startsWith('错误')) ? 'var(--np-color-error)' : 'var(--np-color-on-surface-variant)'};"
                 >
                   {log}
                 </p>

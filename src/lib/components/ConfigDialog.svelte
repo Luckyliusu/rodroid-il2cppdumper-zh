@@ -27,7 +27,7 @@
 </script>
 
 <div class="m3-dialog-scrim m3-scrim-enter" role="presentation">
-  <button type="button" class="absolute inset-0 cursor-default" aria-label="Close dialog" onclick={oncancel}></button>
+  <button type="button" class="absolute inset-0 cursor-default" aria-label="关闭对话框" onclick={oncancel}></button>
   <div class="m3-dialog m3-dialog-enter" role="dialog" aria-labelledby="config-dialog-title">
     <div class="p-6 pb-4 shrink-0">
       <div class="flex items-center gap-3">
@@ -36,9 +36,9 @@
         </div>
         <div class="flex-1 min-w-0">
           <h3 id="config-dialog-title" class="text-lg font-semibold">{$t.dump_options}</h3>
-          <p class="text-xs m3-secondary">Configure what gets included in the dump output.</p>
+          <p class="text-xs m3-secondary">配置转储结果中包含哪些内容。</p>
         </div>
-        <IconButton aria-label="Close" onclick={oncancel}>
+        <IconButton aria-label="关闭" onclick={oncancel}>
           <Icon>close</Icon>
         </IconButton>
       </div>
